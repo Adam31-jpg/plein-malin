@@ -1,0 +1,41 @@
+# Collecte nationale des prix et tâches quotidiennes (prévisions, ménage, noms OSM).
+# Budget GitHub Actions (dépôt privé, 2 000 min/mois) : ~36 passages/jour d'environ 30 s,
+# soit ~1 100 min/mois facturées.
+name: Collecte des prix
+
+on:
+  schedule:
+    - cron: "*/30 5-20 * * *" # toutes les 30 min de 5 h à 20 h UTC (7 h–22 h à Paris l'été)
+    - cron: "0 22,1 * * *" # deux passages la nuit
+    - cron: "20 3 * * *" # tâches quotidiennes
+  workflow_dispatch:
+    inputs:
+      task:
+        description: Tâche à lancer
+        type: choice
+        options: [collect, daily]
+        default: collect
+
+concurrency:
+  group: collecte
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: jobs
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: ${{ github.event.schedule == '20 3 * * *' && 'Tâches quotidiennes' || inputs.task || 'Collecte' }}
+        run: node jobs/collector.mjs ${{ github.event.schedule == '20 3 * * *' && 'daily' || inputs.task || 'collect' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          COLLECT_DEPARTEMENTS: all

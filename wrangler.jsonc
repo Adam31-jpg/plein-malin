@@ -1,0 +1,30 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "plein-malin",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    // Auto-référence requise par OpenNext (doit porter le nom du worker)
+    { "binding": "WORKER_SELF_REFERENCE", "service": "plein-malin" }
+  ],
+  // Pool de connexions vers Neon pour les requêtes web (créé avec `wrangler hyperdrive create`).
+  // localConnectionString sert à `wrangler dev` / `npm run cf:preview` (Postgres Docker).
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "38b0646327e6445597c785a31ae8561f",
+      "localConnectionString": "postgres://plein:plein@localhost:5433/plein_malin"
+    }
+  ],
+  // La collecte nationale tourne dans GitHub Actions (.github/workflows/collect.yml) :
+  // ~9 Mo de flux à traiter, bien au-delà des 10 ms de CPU d'un Worker gratuit.
+  "triggers": { "crons": [] },
+  "observability": { "enabled": true }
+  // DATABASE_URL (Neon, pooler) est un secret de secours si Hyperdrive est indisponible :
+  // `npx wrangler secret put DATABASE_URL`
+}
