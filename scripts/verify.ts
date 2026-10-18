@@ -29,28 +29,24 @@ async function main() {
     ? await db.select().from(currentPrices)
     : await db.select().from(currentPrices).where(inArray(currentPrices.stationId, live.map((s) => s.id)));
   const db_ = new Map(rows.map((r) => [`${r.stationId}:${r.fuel}`, r]));
-  let same = 0, newerLive = 0, wrong = 0, missing = 0;
+  // Les stations déclarent parfois un prix avec plusieurs heures de retard : un prix plus récent
+  // dans le flux qu'en base (ou apparu depuis) attend simplement la prochaine collecte.
+  let same = 0, pending = 0, wrong = 0;
   for (const s of live) {
     for (const p of s.prices) {
       const r = db_.get(`${s.id}:${p.fuel}`);
-      if (!r) {
-        // Prix publié après la dernière collecte : normal.
-        if (lastRun && p.updatedAt > lastRun.startedAt) newerLive++;
-        else {
-          missing++;
-          if (missing <= 5) ko(`manquant en base : station ${s.id} ${p.fuel} ${p.price}`);
-        }
-      } else if (Math.abs(r.price - p.price) < 0.0005) same++;
-      else if (lastRun && p.updatedAt > lastRun.startedAt) newerLive++;
+      if (r && Math.abs(r.price - p.price) < 0.0005) same++;
+      else if (!r || p.updatedAt > r.updatedAt) pending++;
       else {
         wrong++;
         if (wrong <= 5) ko(`prix différent : station ${s.id} ${p.fuel} base ${r.price} / officiel ${p.price}`);
       }
     }
   }
-  const total = same + newerLive + wrong + missing;
-  if (wrong === 0 && missing === 0) ok(`${same}/${total} prix identiques au flux officiel (${newerLive} publiés depuis la dernière collecte)`);
-  else ko(`${wrong} prix différents et ${missing} manquants sur ${total}`);
+  const total = same + pending + wrong;
+  if (wrong === 0) ok(`${same}/${total} prix identiques au flux officiel (${pending} publiés depuis la dernière collecte)`);
+  else ko(`${wrong} prix différents sur ${total}`);
+  if (pending > total * 0.05) ko(`${pending} prix en attente : la collecte semble en retard`);
 
   console.log("Fraîcheur des sources");
   if (!lastRun) ko("aucune collecte");
