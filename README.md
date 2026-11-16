@@ -6,6 +6,8 @@ Plein Malin turns France's real-time fuel price feed (~9,800 stations, published
 
 Live: **https://plein-malin.sukya-467.workers.dev** · 🇫🇷 [Version française](README.fr.md)
 
+<p align="center"><img src="docs/screenshot.jpg" alt="Plein Malin on a phone: diesel expected to go down in Haute-Garonne, with the measured hit rate of that announcement" width="320"></p>
+
 ## Why
 
 The French government publishes every station's prices as open data, for free, without an API key. But the raw feed is hard to use well:
