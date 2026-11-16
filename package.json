@@ -2,6 +2,8 @@
   "name": "plein-malin",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "repository": "github:Adam31-jpg/plein-malin",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
